@@ -45,7 +45,6 @@ public class UserController {
         }
         var isValid = false;
         String subject = this.tokenService.getSubject(token.token());
-        System.out.println(subject);
         if(!subject.isEmpty()) {
             isValid = true;
         }

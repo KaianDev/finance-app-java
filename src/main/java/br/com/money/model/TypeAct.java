@@ -1,8 +1,8 @@
 package br.com.money.model;
 
 public enum TypeAct {
-    REVENUE("REVENUE"),
-    EXPENSE("EXPENSE");
+    REVENUE("Entrada"),
+    EXPENSE("Saída");
 
     private String typeValue;
 
