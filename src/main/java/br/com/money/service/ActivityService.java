@@ -26,7 +26,7 @@ public class ActivityService {
 
     public ActivityResponseDto addActivity(ActivityRequestDto activityRequestDto) {
 
-        if(!activityRequestDto.type().equals(TypeAct.REVENUE) && !activityRequestDto.type().equals(TypeAct.EXPENSE)) {
+        if(activityRequestDto.type().toString() != TypeAct.REVENUE.toString() && activityRequestDto.type().toString() != TypeAct.EXPENSE.toString()) {
             throw new TypeException("Invalid input type");
         }
         if(!validFields(activityRequestDto)) {
