@@ -3,6 +3,8 @@ package br.com.money.controller;
 import br.com.money.model.User;
 import br.com.money.model.dto.LoginDto;
 import br.com.money.model.dto.TokenResponseDto;
+import br.com.money.model.dto.ValidateRequestDto;
+import br.com.money.model.dto.ValidateResponseDto;
 import br.com.money.repository.UserRepository;
 import br.com.money.service.TokenService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,5 +36,19 @@ public class UserController {
         Authentication authentication = authenticationManager.authenticate(usernamePasswordAuthenticationToken);
         User userAuth = (User) authentication.getPrincipal();
         return new ResponseEntity<TokenResponseDto>(new TokenResponseDto(this.tokenService.getToken(userAuth)), HttpStatus.OK);
+    }
+
+    @PostMapping("/validate")
+    public ResponseEntity<ValidateResponseDto> validate(@RequestBody ValidateRequestDto token) {
+        if(token == null) {
+            throw new RuntimeException("token does not exist");
+        }
+        var isValid = false;
+        String subject = this.tokenService.getSubject(token.token());
+        System.out.println(subject);
+        if(!subject.isEmpty()) {
+            isValid = true;
+        }
+        return new ResponseEntity<ValidateResponseDto>(new ValidateResponseDto(isValid), HttpStatus.OK);
     }
 }

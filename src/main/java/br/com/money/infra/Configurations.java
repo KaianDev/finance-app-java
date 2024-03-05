@@ -26,6 +26,7 @@ public class Configurations {
         return http.csrf(custom -> custom.disable())
                 .sessionManagement(custom -> custom.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(custom -> custom.requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/auth/validate").permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(filterToken, UsernamePasswordAuthenticationFilter.class)
                 .build();

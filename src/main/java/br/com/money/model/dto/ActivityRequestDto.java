@@ -1,5 +1,6 @@
 package br.com.money.model.dto;
 
+import br.com.money.model.Activity;
 import br.com.money.model.TypeAct;
 
 import java.util.Date;

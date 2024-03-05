@@ -15,8 +15,8 @@ public class ExceptionAdvice extends ResponseEntityExceptionHandler {
         return new ResponseEntity<>(errorMessageDto, HttpStatus.NOT_FOUND);
     }
 
-    @ExceptionHandler(TypeException.class)
-    public ResponseEntity<ErrorMessageDto> handleTypeException(TypeException exception) {
+    @ExceptionHandler(ValueZeroException.class)
+    public ResponseEntity<ErrorMessageDto> handleTypeException(ValueZeroException exception) {
         ErrorMessageDto errorMessageDto = new ErrorMessageDto(HttpStatus.BAD_REQUEST, exception.getMessage());
         return new ResponseEntity<>(errorMessageDto, HttpStatus.BAD_REQUEST);
     }

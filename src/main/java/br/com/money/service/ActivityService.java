@@ -1,8 +1,8 @@
 package br.com.money.service;
 
-import br.com.money.exception.TypeException;
 import br.com.money.exception.UserNotFoundException;
 import br.com.money.exception.ValidFieldsException;
+import br.com.money.exception.ValueZeroException;
 import br.com.money.model.Activity;
 import br.com.money.model.dto.ActivityRequestDto;
 import br.com.money.model.dto.ActivityResponseDto;
@@ -26,12 +26,14 @@ public class ActivityService {
 
     public ActivityResponseDto addActivity(ActivityRequestDto activityRequestDto) {
 
-        if(activityRequestDto.type().toString() != TypeAct.REVENUE.toString() && activityRequestDto.type().toString() != TypeAct.EXPENSE.toString()) {
-            throw new TypeException("Invalid input type");
-        }
         if(!validFields(activityRequestDto)) {
             throw new ValidFieldsException("Fill in all fields");
         }
+
+        if(activityRequestDto.value() < 0.01) {
+            throw new ValueZeroException("value less than or equal to zero");
+        }
+
         Activity activity = new Activity();
         activity.setDate(activityRequestDto.date());
         activity.setDescription(activityRequestDto.description());
@@ -64,7 +66,10 @@ public class ActivityService {
     }
 
     private boolean validFields(ActivityRequestDto activityRequestDto) {
-        if(activityRequestDto.description() == null || activityRequestDto.date() == null || activityRequestDto.value() == null) {
+        if(activityRequestDto.description() == null || activityRequestDto.description().isEmpty()) {
+            return false;
+        }
+        if(activityRequestDto.date() == null || activityRequestDto.value() == null || activityRequestDto.type() == null) {
             return false;
         }
         return true;
