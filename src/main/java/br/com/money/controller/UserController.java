@@ -2,9 +2,12 @@ package br.com.money.controller;
 
 import br.com.money.model.User;
 import br.com.money.model.dto.LoginDto;
+import br.com.money.model.dto.TokenResponseDto;
 import br.com.money.repository.UserRepository;
 import br.com.money.service.TokenService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -26,10 +29,10 @@ public class UserController {
     private UserRepository userRepository;
 
     @PostMapping("/login")
-    public String login(@RequestBody LoginDto loginDto) {
+    public ResponseEntity<TokenResponseDto> login(@RequestBody LoginDto loginDto) {
         var usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(loginDto.email(), loginDto.password());
         Authentication authentication = authenticationManager.authenticate(usernamePasswordAuthenticationToken);
         User userAuth = (User) authentication.getPrincipal();
-        return this.tokenService.getToken(userAuth);
+        return new ResponseEntity<TokenResponseDto>(new TokenResponseDto(this.tokenService.getToken(userAuth)), HttpStatus.OK);
     }
 }

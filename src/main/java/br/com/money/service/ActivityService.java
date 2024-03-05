@@ -1,5 +1,8 @@
 package br.com.money.service;
 
+import br.com.money.exception.TypeException;
+import br.com.money.exception.UserNotFoundException;
+import br.com.money.exception.ValidFieldsException;
 import br.com.money.model.Activity;
 import br.com.money.model.dto.ActivityRequestDto;
 import br.com.money.model.dto.ActivityResponseDto;
@@ -9,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class ActivityService {
@@ -21,6 +25,13 @@ public class ActivityService {
     }
 
     public ActivityResponseDto addActivity(ActivityRequestDto activityRequestDto) {
+
+        if(activityRequestDto.type() != TypeAct.REVENUE && activityRequestDto.type() != TypeAct.EXPENSE) {
+            throw new TypeException("Invalid input type");
+        }
+        if(!validFields(activityRequestDto)) {
+            throw new ValidFieldsException("Fill in all fields");
+        }
         Activity activity = new Activity();
         activity.setDate(activityRequestDto.date());
         activity.setDescription(activityRequestDto.description());
@@ -31,8 +42,11 @@ public class ActivityService {
     }
 
     public void deleteActivity(Long id) {
-        Activity activity = this.activityRepository.findById(id).get();
-        this.activityRepository.delete(activity);
+        Optional<Activity> activity = this.activityRepository.findById(id);
+        if(activity.isEmpty()) {
+            throw new UserNotFoundException("Not found User");
+        }
+        this.activityRepository.delete(activity.get());
     }
 
     public Double balance() {
@@ -47,5 +61,12 @@ public class ActivityService {
             }
         }
         return sum;
+    }
+
+    private boolean validFields(ActivityRequestDto activityRequestDto) {
+        if(activityRequestDto.description() == null || activityRequestDto.date() == null || activityRequestDto.value() == null) {
+            return false;
+        }
+        return true;
     }
 }
