@@ -1,11 +1,14 @@
 package br.com.money.service;
 
+import br.com.money.controller.ActivityController;
 import br.com.money.model.Activity;
 import com.lowagie.text.*;
 import com.lowagie.text.Font;
+import com.lowagie.text.pdf.BaseFont;
 import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.awt.*;
@@ -16,6 +19,10 @@ import java.util.stream.Stream;
 
 @Service
 public class PdfService {
+
+    @Autowired
+    private ActivityService activityService;
+
     public  ByteArrayInputStream activityPDFReport(List<Activity> activities) {
         Document document = new Document();
         ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -26,8 +33,9 @@ public class PdfService {
             document.open();
 
             // Add Content to PDF file ->
-            Font fontHeader = FontFactory.getFont(FontFactory.TIMES_BOLD, 18F);
-            Paragraph para = new Paragraph("Activity list", fontHeader);
+            Font fontHeader = FontFactory.getFont(String.valueOf(Font.BOLD));
+            fontHeader.setSize(30);
+            Paragraph para = new Paragraph("fnce.", fontHeader);
             para.setAlignment(Element.ALIGN_CENTER);
             document.add(para);
             document.add(Chunk.NEWLINE);
@@ -36,10 +44,11 @@ public class PdfService {
 
             PdfPTable table = new PdfPTable(columnDefinitionSize);
             // Add PDF Table Header ->
-            Stream.of("ID", "Description", "Value", "Type").forEach(headerTitle -> {
+            Stream.of("ID", "Descrição", "Valor", "Tipo").forEach(headerTitle -> {
                 PdfPCell header = new PdfPCell();
-                Font headFont = FontFactory.getFont(FontFactory.TIMES_BOLD);
-                header.setBackgroundColor(Color.GREEN);
+                Font headFont = FontFactory.getFont(String.valueOf(Font.TIMES_ROMAN));
+                headFont.setColor(Color.WHITE);
+                header.setBackgroundColor(Color.DARK_GRAY);
                 header.setFixedHeight(20F);
                 header.setHorizontalAlignment(Element.ALIGN_CENTER);
                 header.setVerticalAlignment(Element.ALIGN_MIDDLE);
@@ -71,6 +80,13 @@ public class PdfService {
                 table.addCell(type);
             }
             document.add(table);
+            document.add(Chunk.NEWLINE);
+
+            fontHeader = FontFactory.getFont(String.valueOf(Font.BOLD));
+            fontHeader.setSize(20);
+            para = new Paragraph("Balanço: " + String.valueOf(activityService.balance()));
+            para.setAlignment(Element.ALIGN_CENTER);
+            document.add(para);
 
             document.close();
         } catch (DocumentException e) {
