@@ -76,7 +76,7 @@ public class PdfService {
                 description.setHorizontalAlignment(Element.ALIGN_CENTER);
                 table.addCell(description);
 
-                PdfPCell value = new PdfPCell(new Phrase(String.valueOf(activity.getValue()).replace(".0", ",00")));
+                PdfPCell value = new PdfPCell(new Phrase("R$" + String.valueOf(activity.getValue()).replace(".0", ",00")));
                 value.setVerticalAlignment(Element.ALIGN_MIDDLE);
                 value.setHorizontalAlignment(Element.ALIGN_CENTER);
                 table.addCell(value);
