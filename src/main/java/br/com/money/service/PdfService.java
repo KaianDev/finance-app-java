@@ -38,7 +38,7 @@ public class PdfService {
             //fontHeader.setSize(30);
             //Paragraph para = new Paragraph("fnce.", fontHeader);
             Paragraph para = new Paragraph();
-            Image png = Image.getInstance("https://github.com/vitorAlves0/moneymanager/blob/98b1b439dc521a5d1d7de4af2530f184340d731e/src/main/resources/static/fnce.png");
+            Image png = Image.getInstance("https://github.com/vitorAlves0/moneymanager/blob/main/src/main/resources/static/fnce.png");
             png.scaleAbsolute(120F, 60F);
             png.setAlignment(Element.ALIGN_CENTER);
             document.add(png);
