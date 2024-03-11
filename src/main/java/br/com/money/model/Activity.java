@@ -3,6 +3,7 @@ package br.com.money.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
 import java.util.Date;
 
 @Entity
@@ -16,7 +17,8 @@ public class Activity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private Date date;
+    @Temporal(TemporalType.DATE)
+    private LocalDate date;
     private String description;
     private Double value;
     private TypeAct type;
