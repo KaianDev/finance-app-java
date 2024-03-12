@@ -2,11 +2,8 @@ package br.com.money.service;
 
 import br.com.money.exception.*;
 import br.com.money.model.Activity;
-import br.com.money.model.dto.ActivityRequestDto;
-import br.com.money.model.dto.ActivityResponseDto;
+import br.com.money.model.dto.*;
 import br.com.money.model.TypeAct;
-import br.com.money.model.dto.BetweenTwoDatesDto;
-import br.com.money.model.dto.DateRequestDto;
 import br.com.money.repository.ActivityRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -26,21 +23,32 @@ public class ActivityService {
         return this.activityRepository.findAll().stream().map(ActivityResponseDto::new).toList();
     }
 
-    public List<ActivityResponseDto> getByDate(DateRequestDto dateRequestDto) {
+    public List<ActivityResponseDto> filters(FilterDto filterDto) {
+        if(filterDto.oneDate() != null && filterDto.secondDate() == null && filterDto.typeValue() == null) {
+            return this.getByDate(filterDto);
+        } else if(filterDto.oneDate() != null && filterDto.secondDate() != null && filterDto.typeValue() == null) {
+            return this.getBetweenTwoDates(filterDto);
+        } else if(filterDto.oneDate() != null && filterDto.secondDate() == null && filterDto.typeValue() != null){
+            return this.getByValue(filterDto);
+        }
+        throw new RandomException("invalid data");
+    }
 
-        List<ActivityResponseDto> list = this.activityRepository.findByDate(dateRequestDto.date()).stream().map(ActivityResponseDto::new).toList();
+    public List<ActivityResponseDto> getByDate(FilterDto filterDto) {
+
+        List<ActivityResponseDto> list = this.activityRepository.findByDate(filterDto.oneDate()).stream().map(ActivityResponseDto::new).toList();
         if(list.isEmpty()) {
             throw new DateNotFoundException("The date given is not available");
         }
         return list;
     }
 
-    public List<ActivityResponseDto> getBetweenTwoDates(BetweenTwoDatesDto betweenTwoDatesDto) {
-        long dias = ChronoUnit.DAYS.between(betweenTwoDatesDto.initialDate(), betweenTwoDatesDto.finalDate());
+    public List<ActivityResponseDto> getBetweenTwoDates(FilterDto filterDto) {
+        long dias = ChronoUnit.DAYS.between(filterDto.oneDate(), filterDto.secondDate());
         List<Activity> activityList = new ArrayList<>();
         List<Activity> activitiesLoop = null;
         for(int i = 0; i <= dias; i++) {
-            activitiesLoop = this.activityRepository.findByDate(betweenTwoDatesDto.initialDate().plusDays(i));
+            activitiesLoop = this.activityRepository.findByDate(filterDto.oneDate().plusDays(i));
             for(Activity custom : activitiesLoop) {
                 activityList.add(custom);
             }
@@ -51,26 +59,30 @@ public class ActivityService {
         return activityList.stream().map(ActivityResponseDto::new).toList();
     }
 
-    public List<ActivityResponseDto> getByValue(String valueType) {
-        List<ActivityResponseDto> listValue = this.getAll();
+    public List<ActivityResponseDto> getByValue(FilterDto filterDto) {
+        List<ActivityResponseDto> listValue = this.getByDate(filterDto);
         List<ActivityResponseDto> listBalance = new ArrayList<>();
 
-        if(!valueType.equals("Despesa") && !valueType.equals("Receita")) {
+        if(listValue.isEmpty()) {
+            throw new RandomException("There are no activities related to the passed parameter yet");
+        }
+
+        if(!filterDto.typeValue().equals("Despesa") && !filterDto.typeValue().equals("Receita")) {
             throw new RandomException("Unavailable parameter");
         }
-        if(valueType.equals("Despesa")) {
+        if(filterDto.typeValue().equals("Despesa")) {
             for(ActivityResponseDto custom : listValue) {
-                if(custom.type().getTypeValue().equals(valueType)) {
+                if(custom.type().getTypeValue().equals(filterDto.typeValue())) {
                     listBalance.add(custom);
                 }
             }
         }
         for(ActivityResponseDto custom : listValue) {
-            if(custom.type().getTypeValue().equals(valueType)) {
+            if(custom.type().getTypeValue().equals(filterDto.typeValue())) {
                 listBalance.add(custom);
             }
         }
-        if(listValue.isEmpty()) {
+        if(listBalance.isEmpty()) {
             throw new RandomException("There are no activities related to the passed parameter yet");
         }
         return listBalance;
