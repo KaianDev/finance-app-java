@@ -7,6 +7,7 @@ import com.lowagie.text.Image;
 import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -14,7 +15,10 @@ import java.awt.*;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
+import java.time.format.DateTimeFormatter;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -24,7 +28,11 @@ public class PdfService {
     @Autowired
     private ActivityService activityService;
 
-    public  ByteArrayInputStream activityPDFReport(List<Activity> activities) {
+    public  ByteArrayInputStream activityPDFReport(List<Activity> activities, HttpServletRequest request) {
+
+        List<Activity> listSort = activities;
+        Collections.sort(listSort, Comparator.comparing(Activity::getDate));
+
         Document document = new Document();
         ByteArrayOutputStream out = new ByteArrayOutputStream();
 
@@ -33,16 +41,12 @@ public class PdfService {
             PdfWriter.getInstance(document, out);
             document.open();
 
-            // Add Content to PDF file ->
             Font fontHeader = FontFactory.getFont(String.valueOf(Font.BOLD));
-            //fontHeader.setSize(30);
-            //Paragraph para = new Paragraph("fnce.", fontHeader);
             Paragraph para = new Paragraph();
             Image png = Image.getInstance("https://raw.githubusercontent.com/vitorAlves0/moneymanager/98b1b439dc521a5d1d7de4af2530f184340d731e/src/main/resources/static/fnce.png");
             png.scaleAbsolute(120F, 60F);
             png.setAlignment(Element.ALIGN_CENTER);
             document.add(png);
-            //para.setAlignment(Element.ALIGN_CENTER);
             document.add(para);
             document.add(Chunk.NEWLINE);
             document.add(Chunk.NEWLINE);
@@ -64,8 +68,8 @@ public class PdfService {
                 table.addCell(header);
             });
 
-            for (Activity activity : activities) {
-                PdfPCell dateCell = new PdfPCell(new Phrase(String.valueOf(new SimpleDateFormat("dd/MM/yyyy").format(activity.getDate()))));
+            for (Activity activity : listSort) {
+                PdfPCell dateCell = new PdfPCell(new Phrase(String.valueOf(activity.getDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")))));
                 dateCell.setFixedHeight(20f);
                 dateCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
                 dateCell.setHorizontalAlignment(Element.ALIGN_CENTER);
@@ -81,7 +85,7 @@ public class PdfService {
                 value.setHorizontalAlignment(Element.ALIGN_CENTER);
                 table.addCell(value);
 
-                PdfPCell type = new PdfPCell(new Phrase(activity.getType().getTypeValue()));
+                PdfPCell type = new PdfPCell(new Phrase(activity.getType().getTypeValue() == "expense" ? "Despesa" : "Receita"));
                 type.setVerticalAlignment(Element.ALIGN_MIDDLE);
                 type.setHorizontalAlignment(Element.ALIGN_CENTER);
                 table.addCell(type);
@@ -91,9 +95,9 @@ public class PdfService {
             document.add(Chunk.NEWLINE);
 
             fontHeader = FontFactory.getFont(String.valueOf(Font.BOLD));
-            fontHeader.setColor(activityService.balance() < 0 ? Color.RED : Color.getHSBColor(0.44F, 0.70F, 0.60F));
+            fontHeader.setColor(activityService.balance(request) < 0 ? Color.RED : Color.getHSBColor(0.44F, 0.70F, 0.60F));
             fontHeader.setSize(20);
-            para = new Paragraph("Saldo: R$" + String.valueOf(activityService.balance()).replace(".0", ",00"), fontHeader);
+            para = new Paragraph("Saldo: R$" + String.valueOf(activityService.balance(request)).replace(".0", ",00"), fontHeader);
             para.setAlignment(Element.ALIGN_CENTER);
             document.add(para);
 
