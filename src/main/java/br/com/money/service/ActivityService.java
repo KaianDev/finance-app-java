@@ -5,9 +5,12 @@ import br.com.money.model.Activity;
 import br.com.money.model.dto.*;
 import br.com.money.model.TypeAct;
 import br.com.money.repository.ActivityRepository;
+import br.com.money.repository.UserRepository;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,77 +21,81 @@ public class ActivityService {
 
     @Autowired
     private ActivityRepository activityRepository;
+    @Autowired
+    private UserRepository userRepository;
+    @Autowired
+    private TokenService tokenService;
+    @Autowired
+    private TokenConvert tokenConvert;
 
-    public List<ActivityResponseDto> getAll() {
-        return this.activityRepository.findAll().stream().map(ActivityResponseDto::new).toList();
+    public List<ActivityResponseDto> getAll(HttpServletRequest request) {
+
+        var email = this.tokenService.getSubject(this.tokenConvert.convert(request));
+        var user = this.userRepository.findByEmail(email);
+        return this.activityRepository.findAllActivitiesByUser(user).stream().map(ActivityResponseDto::new).toList();
     }
 
-    public List<ActivityResponseDto> filters(FilterDto filterDto) {
-        if(filterDto.oneDate() != null && filterDto.secondDate() == null && filterDto.typeValue() == null) {
-            return this.getByDate(filterDto);
-        } else if(filterDto.oneDate() != null && filterDto.secondDate() != null && filterDto.typeValue() == null) {
-            return this.getBetweenTwoDates(filterDto);
-        } else if(filterDto.oneDate() != null && filterDto.secondDate() == null && filterDto.typeValue() != null){
-            return this.getByValue(filterDto);
+    public List<ActivityResponseDto> filters(LocalDate oneDate, LocalDate secondDate, String typeValue, HttpServletRequest request) {
+        if(oneDate != null && secondDate == null && typeValue == null) {
+            return this.getByDate(oneDate, request);
+        } else if(oneDate != null && secondDate != null && typeValue == null) {
+            return this.getBetweenTwoDates(oneDate, secondDate, request);
+        } else if(oneDate != null && secondDate == null && typeValue != null){
+            return this.getByValue(oneDate, typeValue, request);
         }
         throw new RandomException("invalid data");
     }
 
-    public List<ActivityResponseDto> getByDate(FilterDto filterDto) {
-
-        List<ActivityResponseDto> list = this.activityRepository.findByDate(filterDto.oneDate()).stream().map(ActivityResponseDto::new).toList();
-        if(list.isEmpty()) {
-            throw new DateNotFoundException("The date given is not available");
-        }
-        return list;
+    public List<ActivityResponseDto> getByDate(LocalDate oneDate, HttpServletRequest request) {
+        var email = this.tokenService.getSubject(this.tokenConvert.convert(request));
+        var user = this.userRepository.findByEmail(email);
+        return this.activityRepository.findByDateAndUser(oneDate, user).stream().map(ActivityResponseDto::new).toList();
     }
 
-    public List<ActivityResponseDto> getBetweenTwoDates(FilterDto filterDto) {
-        long dias = ChronoUnit.DAYS.between(filterDto.oneDate(), filterDto.secondDate());
+    public List<ActivityResponseDto> getBetweenTwoDates(LocalDate oneDate, LocalDate secondDate, HttpServletRequest request) {
+        long dias = ChronoUnit.DAYS.between(oneDate, secondDate);
         List<Activity> activityList = new ArrayList<>();
-        List<Activity> activitiesLoop = null;
+        List<Activity> activitiesLoop = new ArrayList<>();
+        var email = this.tokenService.getSubject(this.tokenConvert.convert(request));
+        var user = this.userRepository.findByEmail(email);
         for(int i = 0; i <= dias; i++) {
-            activitiesLoop = this.activityRepository.findByDate(filterDto.oneDate().plusDays(i));
+            activitiesLoop = this.activityRepository.findByDateAndUser(oneDate.plusDays(i), user);
             for(Activity custom : activitiesLoop) {
                 activityList.add(custom);
             }
         }
-        if(activityList.isEmpty()) {
-            throw new DateNotFoundException("There are no dates available in the range provided");
-        }
         return activityList.stream().map(ActivityResponseDto::new).toList();
     }
 
-    public List<ActivityResponseDto> getByValue(FilterDto filterDto) {
-        List<ActivityResponseDto> listValue = this.getByDate(filterDto);
+    public List<ActivityResponseDto> getByValue(LocalDate oneDate, String typeValue, HttpServletRequest request) {
+        List<ActivityResponseDto> listValue = this.getByDate(oneDate, request);
         List<ActivityResponseDto> listBalance = new ArrayList<>();
 
         if(listValue.isEmpty()) {
             throw new RandomException("There are no activities related to the passed parameter yet");
         }
 
-        if(!filterDto.typeValue().equals("Despesa") && !filterDto.typeValue().equals("Receita")) {
+        if(!typeValue.equals("expense") && !typeValue.equals("revenue")) {
             throw new RandomException("Unavailable parameter");
         }
-        if(filterDto.typeValue().equals("Despesa")) {
+        if(typeValue.equals("expense")) {
             for(ActivityResponseDto custom : listValue) {
-                if(custom.type().getTypeValue().equals(filterDto.typeValue())) {
+                if(custom.type().getTypeValue().equals(typeValue)) {
+                    listBalance.add(custom);
+                }
+            }
+        } else {
+            for(ActivityResponseDto custom : listValue) {
+                if(custom.type().getTypeValue().equals(typeValue)) {
                     listBalance.add(custom);
                 }
             }
         }
-        for(ActivityResponseDto custom : listValue) {
-            if(custom.type().getTypeValue().equals(filterDto.typeValue())) {
-                listBalance.add(custom);
-            }
-        }
-        if(listBalance.isEmpty()) {
-            throw new RandomException("There are no activities related to the passed parameter yet");
-        }
+
         return listBalance;
     }
 
-    public ActivityResponseDto addActivity(ActivityRequestDto activityRequestDto) {
+    public ActivityResponseDto addActivity(ActivityRequestDto activityRequestDto, HttpServletRequest request) {
 
         if(!validFields(activityRequestDto)) {
             throw new ValidFieldsException("Fill in all fields");
@@ -98,25 +105,34 @@ public class ActivityService {
             throw new ValueZeroException("value less than or equal to zero");
         }
 
+        var email = this.tokenService.getSubject(this.tokenConvert.convert(request));
+        var user = this.userRepository.findByEmail(email);
+
         Activity activity = new Activity();
         activity.setDate(activityRequestDto.date());
         activity.setDescription(activityRequestDto.description());
         activity.setValue(activityRequestDto.value());
         activity.setType(activityRequestDto.type());
+        activity.setUser(user);
         Activity newActivity = this.activityRepository.save(activity);
         return new ActivityResponseDto(newActivity);
     }
 
-    public void deleteActivity(Long id) {
+    public void deleteActivity(Long id, HttpServletRequest request) {
+        var email = this.tokenService.getSubject(this.tokenConvert.convert(request));
+        var user = this.userRepository.findByEmail(email);
         Optional<Activity> activity = this.activityRepository.findById(id);
         if(activity.isEmpty()) {
-            throw new UserNotFoundException("Not found User");
+            throw new UserNotFoundException("Not found activity");
+        }
+        if(user.getId() != activity.get().getUser().getId()) {
+            throw new RandomException("Activity not exist");
         }
         this.activityRepository.delete(activity.get());
     }
 
-    public Double balance() {
-        List<ActivityResponseDto> listBalance = this.getAll();
+    public Double balance(HttpServletRequest request) {
+        List<ActivityResponseDto> listBalance = this.getAll(request);
         Double sum = 0.0;
         for(ActivityResponseDto x : listBalance) {
             if(x.type() == TypeAct.REVENUE) {
