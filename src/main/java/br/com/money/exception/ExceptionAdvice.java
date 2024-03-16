@@ -26,11 +26,6 @@ public class ExceptionAdvice extends ResponseEntityExceptionHandler {
         ErrorMessageDto errorMessageDto = new ErrorMessageDto(HttpStatus.BAD_REQUEST, exception.getMessage());
         return new ResponseEntity<>(errorMessageDto, HttpStatus.BAD_REQUEST);
     }
-    @ExceptionHandler(DateNotFoundException.class)
-    public ResponseEntity<ErrorMessageDto> handleDateNotFoundException(DateNotFoundException exception) {
-        ErrorMessageDto errorMessageDto = new ErrorMessageDto(HttpStatus.NOT_FOUND, exception.getMessage());
-        return new ResponseEntity<>(errorMessageDto, HttpStatus.NOT_FOUND);
-    }
 
     @ExceptionHandler(RandomException.class)
     public ResponseEntity<ErrorMessageDto> handleTypeException(RandomException exception) {
