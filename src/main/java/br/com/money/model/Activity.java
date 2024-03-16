@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
-import java.util.Date;
 
 @Entity
 @Table(name = "activity")
@@ -22,4 +21,8 @@ public class Activity {
     private String description;
     private Double value;
     private TypeAct type;
+
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private User user;
 }
