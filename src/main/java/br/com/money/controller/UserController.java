@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -84,7 +85,7 @@ public class UserController {
         user.setEmail(createDto.email());
         user.setPassword(passwordEncoder.encode(createDto.password()));
         user.setStatus(false);
-        user.setCode(LocalDateTime.now().format(DateTimeFormatter.ofPattern("mmss")));
+        user.setCode(LocalDateTime.now().format(DateTimeFormatter.ofPattern("mmssSS")));
         this.userRepository.save(user);
         Map<String, Object> propMap = new HashMap<>();
         propMap.put("nome", user.getName());
@@ -94,11 +95,32 @@ public class UserController {
     }
     @PostMapping("/confirm")
     public void confirmAccount(@RequestBody CodeRequestDto code) {
-        var user = this.userRepository.findByEmail(code.email());
-        if(!user.getCode().equals(code.code())) {
+        List<User> user = this.userRepository.findByCode(code.code());
+
+        if(user.isEmpty()) {
             throw new RandomException("Code not valid");
         }
-        user.setStatus(true);
+        if(user.size() > 1) {
+            throw new RandomException("Code duplicate");
+        }
+        var userAuth = user.get(0);
+        userAuth.setStatus(true);
+        userAuth.setCode(null);
+        this.userRepository.save(userAuth);
+    }
+
+    @PostMapping("/resend")
+    public void resendMail(@RequestBody ResendRequestDto resendRequestDto) {
+        var user = this.userRepository.findByEmail(resendRequestDto.email());
+        if(user == null) {
+            throw new RandomException("User not valid");
+        }
+        user.setCode(LocalDateTime.now().format(DateTimeFormatter.ofPattern("mmssSS")));
         this.userRepository.save(user);
+
+        Map<String, Object> propMap = new HashMap<>();
+        propMap.put("nome", user.getName());
+        propMap.put("codigo", user.getCode());
+        this.emailService.sendEmail(user.getEmail(), user.getCode(), propMap);
     }
 }

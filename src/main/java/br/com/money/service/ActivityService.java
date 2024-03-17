@@ -32,6 +32,11 @@ public class ActivityService {
 
         var email = this.tokenService.getSubject(this.tokenConvert.convert(request));
         var user = this.userRepository.findByEmail(email);
+
+        if(!user.getStatus()) {
+            throw new RandomException("User inactive");
+        }
+
         return this.activityRepository.findAllActivitiesByUser(user).stream().map(ActivityResponseDto::new).toList();
     }
 
@@ -42,6 +47,8 @@ public class ActivityService {
             return this.getBetweenTwoDates(oneDate, secondDate, request);
         } else if(oneDate != null && secondDate == null && typeValue != null){
             return this.getByValue(oneDate, typeValue, request);
+        } else if(oneDate == null && secondDate == null && typeValue != null) {
+            return this.getByValueType(typeValue, request);
         }
         throw new RandomException("invalid data");
     }
@@ -49,6 +56,11 @@ public class ActivityService {
     public List<ActivityResponseDto> getByDate(LocalDate oneDate, HttpServletRequest request) {
         var email = this.tokenService.getSubject(this.tokenConvert.convert(request));
         var user = this.userRepository.findByEmail(email);
+
+        if(!user.getStatus()) {
+            throw new RandomException("User inactive");
+        }
+
         return this.activityRepository.findByDateAndUser(oneDate, user).stream().map(ActivityResponseDto::new).toList();
     }
 
@@ -58,6 +70,11 @@ public class ActivityService {
         List<Activity> activitiesLoop = new ArrayList<>();
         var email = this.tokenService.getSubject(this.tokenConvert.convert(request));
         var user = this.userRepository.findByEmail(email);
+
+        if(!user.getStatus()) {
+            throw new RandomException("User inactive");
+        }
+
         for(int i = 0; i <= dias; i++) {
             activitiesLoop = this.activityRepository.findByDateAndUser(oneDate.plusDays(i), user);
             for(Activity custom : activitiesLoop) {
@@ -91,7 +108,33 @@ public class ActivityService {
                 }
             }
         }
+        return listBalance;
+    }
 
+    public List<ActivityResponseDto> getByValueType(String typeValue, HttpServletRequest request) {
+        List<ActivityResponseDto> listValue = this.getAll(request);
+        List<ActivityResponseDto> listBalance = new ArrayList<>();
+
+        if(listValue.isEmpty()) {
+            throw new RandomException("There are no activities related to the passed parameter yet");
+        }
+
+        if(!typeValue.equals("expense") && !typeValue.equals("revenue")) {
+            throw new RandomException("Unavailable parameter");
+        }
+        if(typeValue.equals("expense")) {
+            for(ActivityResponseDto custom : listValue) {
+                if(custom.type().getTypeValue().equals(typeValue)) {
+                    listBalance.add(custom);
+                }
+            }
+        } else {
+            for(ActivityResponseDto custom : listValue) {
+                if(custom.type().getTypeValue().equals(typeValue)) {
+                    listBalance.add(custom);
+                }
+            }
+        }
         return listBalance;
     }
 
@@ -108,6 +151,10 @@ public class ActivityService {
         var email = this.tokenService.getSubject(this.tokenConvert.convert(request));
         var user = this.userRepository.findByEmail(email);
 
+        if(!user.getStatus()) {
+            throw new RandomException("User inactive");
+        }
+
         Activity activity = new Activity();
         activity.setDate(activityRequestDto.date());
         activity.setDescription(activityRequestDto.description());
@@ -121,6 +168,11 @@ public class ActivityService {
     public void deleteActivity(Long id, HttpServletRequest request) {
         var email = this.tokenService.getSubject(this.tokenConvert.convert(request));
         var user = this.userRepository.findByEmail(email);
+
+        if(!user.getStatus()) {
+            throw new RandomException("User inactive");
+        }
+
         Optional<Activity> activity = this.activityRepository.findById(id);
         if(activity.isEmpty()) {
             throw new UserNotFoundException("Not found activity");

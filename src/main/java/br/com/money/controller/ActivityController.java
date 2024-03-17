@@ -23,7 +23,7 @@ public class ActivityController {
     }
 
     @GetMapping("/filter")
-    public ResponseEntity<List<ActivityResponseDto>> filters(@RequestParam LocalDate oneDate, LocalDate secondDate, String typeValue, HttpServletRequest request) {
+    public ResponseEntity<List<ActivityResponseDto>> filters(LocalDate oneDate, LocalDate secondDate, String typeValue, HttpServletRequest request) {
         return new ResponseEntity<>(this.activityService.filters(oneDate, secondDate, typeValue, request), HttpStatus.OK);
     }
 
