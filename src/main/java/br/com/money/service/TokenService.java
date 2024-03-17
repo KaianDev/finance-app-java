@@ -19,8 +19,9 @@ public class TokenService {
     public String getToken(User user) {
 
         return JWT.create()
-                .withIssuer("money")
+                .withIssuer("fnce.")
                 .withSubject(user.getUsername())
+                .withClaim("name", user.getName())
                 .withExpiresAt(LocalDateTime.now().plusHours(1).toInstant(ZoneOffset.of("-03:00")))
                 .sign(Algorithm.HMAC256(secret));
     }
@@ -28,7 +29,7 @@ public class TokenService {
     public String getSubject(String token) {
         try {
             return JWT.require(Algorithm.HMAC256(secret))
-                    .withIssuer("money")
+                    .withIssuer("fnce.")
                     .build()
                     .verify(token).getSubject();
         }catch (JWTVerificationException e) {

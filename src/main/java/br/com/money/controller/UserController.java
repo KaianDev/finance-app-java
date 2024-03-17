@@ -2,11 +2,9 @@ package br.com.money.controller;
 
 import br.com.money.exception.RandomException;
 import br.com.money.model.User;
-import br.com.money.model.dto.LoginDto;
-import br.com.money.model.dto.TokenResponseDto;
-import br.com.money.model.dto.ValidateRequestDto;
-import br.com.money.model.dto.ValidateResponseDto;
+import br.com.money.model.dto.*;
 import br.com.money.repository.UserRepository;
+import br.com.money.service.EmailService;
 import br.com.money.service.TokenConvert;
 import br.com.money.service.TokenService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -15,13 +13,17 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.AuthenticatedPrincipal;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/auth")
@@ -40,6 +42,9 @@ public class UserController {
 
     @Autowired
     private TokenConvert tokenConvert;
+
+    @Autowired
+    private EmailService emailService;
 
     @PostMapping("/login")
     public ResponseEntity<TokenResponseDto> login(@RequestBody LoginDto loginDto) {
@@ -73,11 +78,27 @@ public class UserController {
     }
 
     @PostMapping("/create")
-    public String createUser(@RequestBody LoginDto loginDto) {
+    public ResponseEntity<CreateAccountResponseDto> createUser(@RequestBody CreateAccountRequestDto createDto) {
         User user = new User();
-        user.setEmail(loginDto.email());
-        user.setPassword(passwordEncoder.encode(loginDto.password()));
+        user.setName(createDto.name());
+        user.setEmail(createDto.email());
+        user.setPassword(passwordEncoder.encode(createDto.password()));
+        user.setStatus(false);
+        user.setCode(LocalDateTime.now().format(DateTimeFormatter.ofPattern("mmss")));
         this.userRepository.save(user);
-        return "User created";
+        Map<String, Object> propMap = new HashMap<>();
+        propMap.put("nome", user.getName());
+        propMap.put("codigo", user.getCode());
+        this.emailService.sendEmail(user.getEmail(), user.getCode(), propMap);
+        return new ResponseEntity<CreateAccountResponseDto>(new CreateAccountResponseDto(user), HttpStatus.CREATED);
+    }
+    @PostMapping("/confirm")
+    public void confirmAccount(@RequestBody CodeRequestDto code) {
+        var user = this.userRepository.findByEmail(code.email());
+        if(!user.getCode().equals(code.code())) {
+            throw new RandomException("Code not valid");
+        }
+        user.setStatus(true);
+        this.userRepository.save(user);
     }
 }

@@ -22,9 +22,12 @@ public class User implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    private String name;
     @Column(unique = true)
     private String email;
     private String password;
+    private Boolean status;
+    private String code;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -53,6 +56,6 @@ public class User implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return true;
+        return this.getStatus();
     }
 }
