@@ -7,6 +7,7 @@ import br.com.money.repository.UserRepository;
 import br.com.money.service.EmailService;
 import br.com.money.service.TokenConvert;
 import br.com.money.service.TokenService;
+import com.auth0.jwt.interfaces.DecodedJWT;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -15,16 +16,11 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @RestController
 @RequestMapping("/auth")
@@ -86,41 +82,38 @@ public class UserController {
         user.setPassword(passwordEncoder.encode(createDto.password()));
         user.setStatus(false);
         user.setCode(LocalDateTime.now().format(DateTimeFormatter.ofPattern("mmssSS")));
-        this.userRepository.save(user);
         Map<String, Object> propMap = new HashMap<>();
         propMap.put("nome", user.getName());
         propMap.put("codigo", user.getCode());
         this.emailService.sendEmail(user.getEmail(), user.getCode(), propMap);
-        return new ResponseEntity<CreateAccountResponseDto>(new CreateAccountResponseDto(user), HttpStatus.CREATED);
+        String activationToken = this.tokenService.unauthorizedUserToken(user);
+        return new ResponseEntity<CreateAccountResponseDto>(new CreateAccountResponseDto(user, activationToken), HttpStatus.CREATED);
     }
     @PostMapping("/confirm")
-    public void confirmAccount(@RequestBody CodeRequestDto code) {
-        List<User> user = this.userRepository.findByCode(code.code());
-
-        if(user.isEmpty()) {
+    public void confirmAccount(@RequestBody CodeRequestDto code, @RequestHeader String activationToken) {
+        DecodedJWT tokenDecoded = this.tokenService.decoded(activationToken);
+        User user = new User();
+        user.setName(tokenDecoded.getClaim("name").asString());
+        user.setEmail(tokenDecoded.getClaim("email").asString());
+        user.setPassword(tokenDecoded.getClaim("password").asString());
+        user.setStatus(false);
+        user.setCode(tokenDecoded.getClaim("code").asString());
+        if(!user.getCode().equals(code.code())) {
             throw new RandomException("Code not valid");
         }
-        if(user.size() > 1) {
-            throw new RandomException("Code duplicate");
-        }
-        var userAuth = user.get(0);
-        userAuth.setStatus(true);
-        userAuth.setCode(null);
-        this.userRepository.save(userAuth);
+        user.setStatus(true);
+        user.setCode(null);
+        this.userRepository.save(user);
     }
 
     @PostMapping("/resend")
-    public void resendMail(@RequestBody ResendRequestDto resendRequestDto) {
-        var user = this.userRepository.findByEmail(resendRequestDto.email());
-        if(user == null) {
-            throw new RandomException("User not valid");
-        }
-        user.setCode(LocalDateTime.now().format(DateTimeFormatter.ofPattern("mmssSS")));
-        this.userRepository.save(user);
-
+    public void resendMail(@RequestHeader String activationToken) {
+        var name = this.tokenService.decoded(activationToken).getClaim("name").asString();
+        var email = this.tokenService.decoded(activationToken).getClaim("email").asString();
+        var code = this.tokenService.decoded(activationToken).getClaim("code").asString();
         Map<String, Object> propMap = new HashMap<>();
-        propMap.put("nome", user.getName());
-        propMap.put("codigo", user.getCode());
-        this.emailService.sendEmail(user.getEmail(), user.getCode(), propMap);
+        propMap.put("nome", name);
+        propMap.put("codigo", code);
+        this.emailService.sendEmail(email, code, propMap);
     }
 }

@@ -4,6 +4,7 @@ import br.com.money.model.User;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
+import com.auth0.jwt.interfaces.DecodedJWT;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -26,6 +27,15 @@ public class TokenService {
                 .sign(Algorithm.HMAC256(secret));
     }
 
+    public String unauthorizedUserToken(User user) {
+        return JWT.create()
+                .withClaim("name", user.getName())
+                .withClaim("email", user.getEmail())
+                .withClaim("password", user.getPassword())
+                .withClaim("code", user.getCode())
+                .sign(Algorithm.HMAC256(secret));
+    }
+
     public String getSubject(String token) {
         try {
             return JWT.require(Algorithm.HMAC256(secret))
@@ -35,5 +45,9 @@ public class TokenService {
         }catch (JWTVerificationException e) {
             return "";
         }
+    }
+
+    public DecodedJWT decoded(String token) {
+        return JWT.decode(token);
     }
 }
