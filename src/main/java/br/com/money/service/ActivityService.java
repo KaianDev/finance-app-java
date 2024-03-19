@@ -4,10 +4,12 @@ import br.com.money.exception.*;
 import br.com.money.model.Activity;
 import br.com.money.model.dto.*;
 import br.com.money.model.TypeAct;
+import br.com.money.repository.ActivityPaginationRepository;
 import br.com.money.repository.ActivityRepository;
 import br.com.money.repository.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -24,23 +26,23 @@ public class ActivityService {
     @Autowired
     private UserRepository userRepository;
     @Autowired
+    private ActivityPaginationRepository paginationRepository;
+    @Autowired
     private TokenService tokenService;
     @Autowired
     private TokenConvert tokenConvert;
 
-    public List<ActivityResponseDto> getAll(HttpServletRequest request) {
-
+    public List<ActivityResponseDto> getAllPagination(Pageable pageable ,HttpServletRequest request) {
         var email = this.tokenService.getSubject(this.tokenConvert.convert(request));
         var user = this.userRepository.findByEmail(email);
 
         if(!user.getStatus()) {
             throw new RandomException("User inactive");
         }
-
-        return this.activityRepository.findAllActivitiesByUser(user).stream().map(ActivityResponseDto::new).toList();
+        return this.paginationRepository.findAllByUser(pageable ,user).stream().map(ActivityResponseDto::new).toList();
     }
 
-    public List<ActivityResponseDto> filters(LocalDate oneDate, LocalDate secondDate, String typeValue, HttpServletRequest request) {
+    public List<ActivityResponseDto> filters(Pageable pageable ,LocalDate oneDate, LocalDate secondDate, String typeValue, HttpServletRequest request) {
         if(oneDate != null && secondDate == null && typeValue == null) {
             return this.getByDate(oneDate, request);
         } else if(oneDate != null && secondDate != null && typeValue == null) {
@@ -48,7 +50,7 @@ public class ActivityService {
         } else if(oneDate != null && secondDate == null && typeValue != null){
             return this.getByValue(oneDate, typeValue, request);
         } else if(oneDate == null && secondDate == null && typeValue != null) {
-            return this.getByValueType(typeValue, request);
+            return this.getByValueType(pageable, typeValue, request);
         }
         throw new RandomException("invalid data");
     }
@@ -111,8 +113,8 @@ public class ActivityService {
         return listBalance;
     }
 
-    public List<ActivityResponseDto> getByValueType(String typeValue, HttpServletRequest request) {
-        List<ActivityResponseDto> listValue = this.getAll(request);
+    public List<ActivityResponseDto> getByValueType(Pageable pageable,String typeValue, HttpServletRequest request) {
+        List<ActivityResponseDto> listValue = this.getAllPagination(pageable ,request);
         List<ActivityResponseDto> listBalance = new ArrayList<>();
 
         if(listValue.isEmpty()) {
@@ -183,8 +185,8 @@ public class ActivityService {
         this.activityRepository.delete(activity.get());
     }
 
-    public Double balance(HttpServletRequest request) {
-        List<ActivityResponseDto> listBalance = this.getAll(request);
+    public Double balance(Pageable pageable ,HttpServletRequest request) {
+        List<ActivityResponseDto> listBalance = this.getAllPagination(pageable ,request);
         Double sum = 0.0;
         for(ActivityResponseDto x : listBalance) {
             if(x.type() == TypeAct.REVENUE) {

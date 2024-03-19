@@ -10,6 +10,7 @@ import br.com.money.service.TokenService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -42,11 +43,11 @@ public class PdfController {
     private TokenConvert tokenConvert;
 
     @GetMapping("/getPdf")
-    public ResponseEntity<InputStreamResource> activityReport(HttpServletRequest request) throws IOException {
+    public ResponseEntity<InputStreamResource> activityReport(Pageable pageable, HttpServletRequest request) throws IOException {
         var email = this.tokenService.getSubject(this.tokenConvert.convert(request));
         User user = this.userRepository.findByEmail(email);
         List<Activity> activities = this.activityRepository.findAllActivitiesByUser(user);
-        ByteArrayInputStream bis = this.pdfService.activityPDFReport(activities, request);
+        ByteArrayInputStream bis = this.pdfService.activityPDFReport(pageable ,activities, request);
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.add("Content-Disposition", "inline; filename=activities.pdf");
         return ResponseEntity.ok().header(String.valueOf(httpHeaders)).contentType(MediaType.APPLICATION_PDF).body(new InputStreamResource(bis));

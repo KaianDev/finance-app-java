@@ -9,6 +9,7 @@ import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.awt.*;
@@ -28,7 +29,7 @@ public class PdfService {
     @Autowired
     private ActivityService activityService;
 
-    public  ByteArrayInputStream activityPDFReport(List<Activity> activities, HttpServletRequest request) {
+    public  ByteArrayInputStream activityPDFReport(Pageable pageable, List<Activity> activities, HttpServletRequest request) {
 
         List<Activity> listSort = activities;
         Collections.sort(listSort, Comparator.comparing(Activity::getDate));
@@ -95,9 +96,9 @@ public class PdfService {
             document.add(Chunk.NEWLINE);
 
             fontHeader = FontFactory.getFont(String.valueOf(Font.BOLD));
-            fontHeader.setColor(activityService.balance(request) < 0 ? Color.RED : Color.getHSBColor(0.44F, 0.70F, 0.60F));
+            fontHeader.setColor(activityService.balance(pageable ,request) < 0 ? Color.RED : Color.getHSBColor(0.44F, 0.70F, 0.60F));
             fontHeader.setSize(20);
-            para = new Paragraph("Saldo: R$" + String.valueOf(activityService.balance(request)).replace(".0", ",00"), fontHeader);
+            para = new Paragraph("Saldo: R$" + String.valueOf(activityService.balance(pageable ,request)).replace(".0", ",00"), fontHeader);
             para.setAlignment(Element.ALIGN_CENTER);
             document.add(para);
 
