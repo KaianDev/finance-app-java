@@ -10,6 +10,7 @@ import br.com.money.service.TokenService;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -42,6 +43,9 @@ public class UserController {
 
     @Autowired
     private EmailService emailService;
+
+    @Value("${spring.url.forgot}")
+    private String urlForgot;
 
     @PostMapping("/login")
     public ResponseEntity<TokenResponseDto> login(@RequestBody LoginDto loginDto) {
@@ -116,4 +120,35 @@ public class UserController {
         propMap.put("codigo", code);
         this.emailService.sendEmail(email, code, propMap);
     }
+    @PostMapping("/forgot/sendmail")
+    public void forgotPasswordResend(@RequestBody ResendRequestDto resendRequestDto) {
+        var user = this.userRepository.findByEmail(resendRequestDto.email());
+        if(user == null) {
+            throw new RandomException("Email not valid");
+        }
+        var code = UUID.randomUUID().toString();
+        user.setCode(code);
+        this.userRepository.save(user);
+        var url = urlForgot + "/" + code + "/" + user.getId();
+
+        Map<String, Object> propMap = new HashMap<>();
+        propMap.put("nome", user.getName());
+        propMap.put("url", url);
+        this.emailService.sendEmailForgot(user.getEmail(), propMap);
+    }
+
+    @PostMapping("/forgot")
+    public void forgotPassword(@RequestBody ForgotPasswordDto forgotPassword) {
+        var user = this.userRepository.findById(forgotPassword.id());
+        if(user.isEmpty()) {
+            throw new RandomException("User does not exists");
+        }
+        if(!user.get().getCode().equals(forgotPassword.code())) {
+            throw new RandomException("Code not valid");
+        }
+
+        user.get().setPassword(passwordEncoder.encode(forgotPassword.password()));
+        this.userRepository.save(user.get());
+    }
+
 }

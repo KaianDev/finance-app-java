@@ -39,6 +39,7 @@ public class ActivityService {
         if(!user.getStatus()) {
             throw new RandomException("User inactive");
         }
+
         return this.paginationRepository.findAllByUser(pageable ,user).stream().map(ActivityResponseDto::new).toList();
     }
 

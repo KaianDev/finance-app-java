@@ -47,4 +47,29 @@ public class EmailService {
         }
         return content.toString();
     }
+
+    public void sendEmailForgot(String email, Map<String, Object> prop) {
+        MimeMessage mimeMessage = javaMailSender.createMimeMessage();
+        try {
+            MimeMessageHelper mimeMessageHelper = new MimeMessageHelper(mimeMessage, true);
+            mimeMessageHelper.setFrom(sender);
+            mimeMessageHelper.setTo(email);
+            mimeMessageHelper.setSubject("Não responda este email");
+            mimeMessageHelper.setText(getTemplateForgot(prop), true);
+
+            javaMailSender.send(mimeMessageHelper.getMimeMessage());
+        } catch (MessagingException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public String getTemplateForgot(Map<String, Object> model) {
+        StringBuffer content = new StringBuffer();
+        try {
+            content.append(FreeMarkerTemplateUtils.processTemplateIntoString(fmConfig.getTemplate("forget.flth"), model));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return content.toString();
+    }
 }

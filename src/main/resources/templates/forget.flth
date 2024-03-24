@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: Arial, Helvetica, sans-serif;
+      }
+
+      a {
+        text-decoration: none;
+        color: #fff;
+      }
+
+      a:visited {
+        color: #fff;
+      }
+
+      header {
+        padding: 10px;
+        text-align: center;
+        background-color: #10b981;
+        box-shadow: -1px -1px 10px #1d1c1c;
+        margin-bottom: 20px;
+      }
+
+      h1.title {
+        font-size: 2.5rem;
+        color: #fff;
+      }
+
+      h2.user-name {
+        font-size: 1.2rem;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      .container {
+        padding: 10px;
+        max-width: 500px;
+        width: 100%;
+        margin: 0 auto;
+      }
+
+      p.paragraph {
+        text-align: justify;
+        margin-bottom: 10px;
+        color: #777;
+      }
+
+      .link {
+        width: 100%;
+        display: block;
+        padding: 10px;
+        text-align: center;
+        margin: 20px 0;
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: white;
+        background-color: #10b981;
+        border-radius: 10px;
+        text-transform: none;
+      }
+
+      footer {
+        max-width: 500px;
+        margin: 0 auto;
+        padding: 10px;
+      }
+
+      p.graciously {
+        font-size: 0.9rem;
+        color: #777;
+      }
+
+      p.title {
+        color: #10b981;
+        font-weight: 700;
+        font-size: 1.5rem;
+      }
+    </style>
+  </head>
+
+  <body>
+    <header>
+      <h1 class="title">fnce.</h1>
+    </header>
+
+    <h2 class="user-name">Olá, ${nome},</h2>
+    <div class="container">
+      <p class="paragraph">
+        Recebemos uma solicitação para redefinição de senha associada à sua
+        conta. Se você não solicitou esta ação, por favor, ignore este email.
+      </p>
+      <p class="paragraph">Para redefinir sua senha, clique no link abaixo:</p>
+
+      <a class="link" href="${url}">Clique Aqui</a>
+      <p class="paragraph">
+        Se o botão acima não funcionar, copie e cole o seguinte link em seu
+        navegador:
+      </p>
+      <p class="link">${url}</p>
+      <p class="paragraph">
+        Se precisar de ajuda ou se você não solicitou esta redefinição de senha,
+        entre em contato conosco imediatamente.
+      </p>
+    </div>
+    <footer>
+      <p class="graciously">Atenciosamente,</p>
+      <p class="title">fnce.</p>
+    </footer>
+  </body>
+</html>
